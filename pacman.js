@@ -23,7 +23,7 @@ var NONE        = 4,
 
 Pacman.FPS = 30;
 
-Pacman.Ghost = function (game, map, colour) {
+Pacman.Ghost = function (game, map, colour, shape) {
 
     var position  = null,
         direction = null,
@@ -139,6 +139,10 @@ Pacman.Ghost = function (game, map, colour) {
         return colour;
     };
 
+    function getShape() {
+        return shape;
+    };
+
     function draw(ctx) {
   
         var s    = map.blockSize, 
@@ -164,7 +168,10 @@ Pacman.Ghost = function (game, map, colour) {
         ctx.beginPath();
 
         ctx.moveTo(left, base);
+        ctx.font = '16px FontAwesome';
+        ctx.fillText(getShape(), left, base);
 
+        /*
         ctx.quadraticCurveTo(left, top, left + (s/2),  top);
         ctx.quadraticCurveTo(left + s, top, left+s,  base);
         
@@ -177,13 +184,13 @@ Pacman.Ghost = function (game, map, colour) {
 
         ctx.closePath();
         ctx.fill();
-
         ctx.beginPath();
         ctx.fillStyle = "#FFF";
         ctx.arc(left + 6,top + 6, s / 6, 0, 300, false);
         ctx.arc((left + s) - 6,top + 6, s / 6, 0, 300, false);
         ctx.closePath();
         ctx.fill();
+*/
 
         var f = s / 12;
         var off = {};
@@ -392,6 +399,8 @@ Pacman.User = function (game, map) {
             nextWhole   = null, 
             oldPosition = position,
             block       = null;
+
+        var XCELLS = 19;
         
         if (due !== direction) {
             npos = getNewCoord(due, position);
@@ -417,7 +426,7 @@ Pacman.User = function (game, map) {
             return {"new" : position, "old" : position};
         }
         
-        if (npos.y === 100 && npos.x >= 190 && direction === RIGHT) {
+        if (npos.y === 100 && npos.x >= XCELLS * 10 && direction === RIGHT) {
             npos = {"y": 100, "x": -10};
         }
         
@@ -479,7 +488,9 @@ Pacman.User = function (game, map) {
             return;
         }
 
-        ctx.fillStyle = "#FFFF00";
+        //ctx.fillStyle = "#FFFF00";
+        //ctx.strokeStyle = "#FFFF00";
+        ctx.save();
         ctx.beginPath();        
         ctx.moveTo(((position.x/10) * size) + half, 
                    ((position.y/10) * size) + half);
@@ -488,27 +499,43 @@ Pacman.User = function (game, map) {
                 ((position.y/10) * size) + half,
                 half, 0, Math.PI * 2 * amount, true); 
         
-        ctx.fill();    
+        ctx.clip();
+        const img = document.getElementById('source');
+        ctx.drawImage(img, (position.x/10) * size,
+                (position.y/10) * size, size, size);
+        
+        ctx.restore();
+        //ctx.fill();    
+        //ctx.stroke();
     };
 
     function draw(ctx) { 
 
         var s     = map.blockSize, 
-            angle = calcAngle(direction, position);
+            angle = calcAngle(direction, position),
+            half  = s / 2;
 
-        ctx.fillStyle = "#FFFF00";
+        //ctx.fillStyle = "#FFFF00";
+        ctx.strokeStyle = "#FFFF00";
 
+        ctx.save();
         ctx.beginPath();        
 
-        ctx.moveTo(((position.x/10) * s) + s / 2,
-                   ((position.y/10) * s) + s / 2);
+        ctx.moveTo(((position.x/10) * s) + half,
+                   ((position.y/10) * s) + half);
         
-        ctx.arc(((position.x/10) * s) + s / 2,
-                ((position.y/10) * s) + s / 2,
-                s / 2, Math.PI * angle.start, 
+        ctx.arc(((position.x/10) * s) + half,
+                ((position.y/10) * s) + half,
+                half, Math.PI * angle.start, 
                 Math.PI * angle.end, angle.direction); 
+        ctx.clip();
+        const img = document.getElementById('source');
+        ctx.drawImage(img, (position.x/10) * s,
+                (position.y/10) * s, s, s);
         
-        ctx.fill();    
+        ctx.restore();
+        //ctx.fill();    
+        //ctx.stroke();
     };
     
     initUser();
@@ -652,13 +679,17 @@ Pacman.Map = function (size) {
             return;
         }
 
-        ctx.beginPath();
         
         if (layout === Pacman.EMPTY || layout === Pacman.BLOCK || 
             layout === Pacman.BISCUIT) {
             
+            ctx.beginPath();
+
             ctx.fillStyle = "#000";
+            ctx.strokeStyle = "#000";
 		    ctx.fillRect((x * blockSize), (y * blockSize), 
+                         blockSize, blockSize);
+		    ctx.strokeRect((x * blockSize), (y * blockSize), 
                          blockSize, blockSize);
 
             if (layout === Pacman.BISCUIT) {
@@ -667,8 +698,9 @@ Pacman.Map = function (size) {
                              (y * blockSize) + (blockSize / 2.5), 
                              blockSize / 6, blockSize / 6);
 	        }
+
+            ctx.closePath();	 
         }
-        ctx.closePath();	 
     };
 
     reset();
@@ -776,6 +808,7 @@ var PACMAN = (function () {
         audio        = null,
         ghosts       = [],
         ghostSpecs   = ["#00FFDE", "#FF0000", "#FFB8DE", "#FFB847"],
+        ghostShapes   = ["\uF099", "\uF09A", "\uF1A0"],
         eatenCount   = 0,
         level        = 0,
         tick         = 0,
@@ -1029,12 +1062,15 @@ var PACMAN = (function () {
     
     function init(wrapper, root) {
         
+        var XCELLS = 19, YCELLS = 22;
+
         var i, len, ghost,
-            blockSize = wrapper.offsetWidth / 19,
+            blockSize = wrapper.offsetWidth / XCELLS,
             canvas    = document.createElement("canvas");
+
         
-        canvas.setAttribute("width", (blockSize * 19) + "px");
-        canvas.setAttribute("height", (blockSize * 22) + 30 + "px");
+        canvas.setAttribute("width", (blockSize * XCELLS) + "px");
+        canvas.setAttribute("height", (blockSize * YCELLS) + 30 + "px");
 
         wrapper.appendChild(canvas);
 
@@ -1048,7 +1084,7 @@ var PACMAN = (function () {
         }, map);
 
         for (i = 0, len = ghostSpecs.length; i < len; i += 1) {
-            ghost = new Pacman.Ghost({"getTick":getTick}, map, ghostSpecs[i]);
+            ghost = new Pacman.Ghost({"getTick":getTick}, map, ghostSpecs[i], ghostShapes[Math.floor(Math.random() * ghostShapes.length)]);
             ghosts.push(ghost);
         }
         
@@ -1267,3 +1303,50 @@ Object.prototype.clone = function () {
     }
     return newObj;
 };
+Pacman.MAP2 = [
+    /* 24x16 world with each cell = 18px X 18px */
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],   
+    [0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],   
+    [0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 4, 1, 0],   
+    [0, 4, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 0],   
+    [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],   
+    [0, 2, 1, 1, 1, 1, 1, 2, 2, 0, 2, 1, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],   
+    [0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],   
+    [0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],   
+    [2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 2],   
+    [0, 2, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 2, 0, 1, 1, 0],   
+    [0, 2, 0, 1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0],   
+    [0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 4, 1, 1, 1, 0],   
+    [0, 1, 1, 1, 4, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 2, 0],   
+    [0, 1, 0, 0, 0, 0, 0, 1, 1, 2, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 2, 0],   
+    [0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 4, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0],   
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+];
+
+Pacman.WALLS2 = [
+    /* word: privacy */
+    [{"move": [4.5, 9.5]}, {"line": [4.5, 6.5]}, {"line": [6, 6.5]}, {"line": [6, 8.5]}, {"line": [4.5, 8.5]}],
+    [{"move": [6.5, 8.5]}, {"line": [6.5, 6.5]}, {"line": [8, 6.5]}],
+    [{"move": [8.5, 6.5]}, {"line": [9.5, 6.5]}, {"line": [9.5, 8.5]}, {"line": [8.5, 8.5]}, {"line": [10.5, 8.5]}], [{"move": [9.2, 6]}, {"line": [9.5, 6]}],
+    [{"move": [10.8, 6.5]}, {"line": [11.8, 8.5]}, {"line": [12.8, 6.5]}],
+    [{"move": [13.5, 6.5]}, {"line": [15, 6.5]}, {"line": [15, 8.5]}, {"line": [13.5, 8.5]}, {"line": [13.5, 7.5]}, {"line": [15, 7.5]}],
+    [{"move": [16.5, 6.5]}, {"line": [15.5, 6.5]}, {"line": [15.5, 8.5]}, {"line": [16.5, 8.5]}],
+    [{"move": [17, 6.5]}, {"line": [17.8, 8.5]}, {"line": [17.5, 9.5]}, {"line": [18.5, 6.5]}],
+    /* walls */
+    [{"move": [0.5, 7.5]}, {"line": [0.5, 0.5]}, {"line": [23.5, 0.5]}, {"line": [23.5, 7.5]}],
+    [{"move": [6.5, 0.5]}, {"line": [6.5, 4.5]}, {"line": [2.5, 4.5]}, {"line": [2.5, 2.5]}, {"line": [4.5, 2.5]}],
+    [{"move": [8.5, 0.5]}, {"line": [8.5, 4.5]}, {"line": [10.5, 4.5]}, {"line": [10.5, 3.5]}, {"line": [11.5, 3.5]}, {"line": [11.5, 2.5]}, {"line": [12.5, 2.5]}],
+    [{"move": [13.5, 4.5]}, {"line": [17.5, 4.5]}, {"line": [17.5, 2.5]}, {"line": [16.5, 2.5]}, {"line": [20.5, 2.5]}],
+    [{"move": [2.5, 6.5]}, {"line": [2.5, 11.5]}, {"line": [5.5, 11.5]}, {"line": [5.5, 10.5]}, {"line": [8.5, 10.5]}, {"line": [8.5, 12.5]}, {"line": [6.5, 12.5]}, {"line": [6.5, 13.5]}, {"line": [2.5, 13.5]}],
+    [{"move": [10.5, 10.5]}, {"line": [10.5, 9.5]}, {"line": [11.5, 9.5]}, {"line": [11.5, 10.5]}, {"line": [12.5, 10.5]}, {"line": [12.5, 12.5]}, {"line": [15.5, 12.5]}, {"line": [15.5, 11.5]}],
+    [{"move": [10.5, 12.5]}, {"line": [10.5, 13.5]}, {"line": [13.5, 13.5]}, {"line": [13.5, 12.5]}],
+    [{"move": [17.5, 13.5]}, {"line": [17.5, 12.5]}, {"line": [20.5, 12.5]}, {"line": [20.5, 15.5]}],
+    [{"move": [23.5, 10.5]}, {"line": [20.5, 10.5]}, {"line": [20.5, 8.5]}, {"line": [22.5, 8.5]}],
+    [{"move": [23.5, 6.5]}, {"line": [20.5, 6.5]}],
+    [{"move": [23.5, 4.5]}, {"line": [19.5, 4.5]}],
+    [{"move": [8.5, 15.5]}, {"line": [8.5, 14.5]}],
+    [{"move": [15.5, 15.5]}, {"line": [15.5, 14.5]}],
+    [{"move": [14.5, 0.5]}, {"line": [14.5, 2.5]}],
+    [{"move": [18.5, 11.5]}, {"line": [18.5, 12.5]}],
+    [{"move": [0.5, 8.5]}, {"line": [0.5, 15.5]}, {"line": [23.5, 15.5]}, {"line": [23.5, 8.5]}]
+];

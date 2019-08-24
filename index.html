@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>HTML5 Pacman</title>
+    <title>Pacman 4 Privacy</title>
     
     <style type="text/css">
       @font-face {
@@ -25,19 +25,30 @@
       body { width:342px; margin:0px auto; font-family:sans-serif; }
       a { text-decoration:none; }
     </style>
-
+    <link rel="stylesheet" 
+            href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 </head>
 
 <body>
   
   <div id="shim">shim for font face</div>
 
-  <h1>HTML5 Pacman</h1>
+  <h1>Pacman 4 Privacy</h1>
 
-  <a href="http://arandomurl.com/">Writeup</a> |
-  Code on <a href="http://arandomurl.com/">Github</a>
+ <!-- <a href="http://arandomurl.com/">Writeup</a> |
+ Code on <a href="http://arandomurl.com/">Github</a>-->
 
+  <div style="display:none;">
+    <img id="source"
+         src="iff.png"
+         width="18" height="16">
+  </div>
   <div id="pacman"></div>
+  <div id="credits">
+    <div>HTML5 Source: <a href="https://github.com/daleharvey/pacman/commits?author=daleharvey" target="_blank">Dale Harvey</a></div>
+    <div>Idea: <a href="https://twitter.com/apar1984" target="_blank">Apar Gupta</a></div>
+    <div>Like this game? Give us a shoutout on <a href="https://twitter.com/banbreach" target="_blank">Twitter!</a></div>
+  </div>
   <script src="pacman.js"></script>
   <script src="modernizr-1.5.min.js"></script>
 
